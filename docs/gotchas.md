@@ -8,15 +8,24 @@ This document covers known edge cases, failure modes, and their mitigations. Eac
 
 ### R6: omarchy-update overwrites pacman.conf
 
-**Symptom**: After running `omarchy-update`, CachyOS repos disappear from `pacman.conf`. Package installs fail with "repository not found" or packages resolve to Arch versions instead of CachyOS-optimized builds.
+**Symptom**: After running `omarchy-update` or `omarchy-refresh-pacman`, CachyOS repos disappear from `pacman.conf`. Package installs fail with "repository not found" or packages resolve to Arch versions instead of CachyOS-optimized builds.
 
-**Root cause**: `omarchy-update` regenerates `pacman.conf` from a template, removing any custom repo blocks that were appended after the initial Omarchy install.
+**Root cause**: Both `omarchy-update` and `omarchy-refresh-pacman` regenerate `pacman.conf` from a template, removing any custom repo blocks that were appended after the initial Omarchy install. `omarchy-refresh-pacman` is especially dangerous because it uses a raw `cp omarchy-default-pacman.conf /etc/pacman.conf` (not a pacman package transaction), then immediately runs `pacman -Syyuu` — potentially downgrading CachyOS-patched packages against vanilla Arch repos.
 
-**Mitigation**: This project installs a pacman hook at `/etc/pacman.d/hooks/zz-cachyos-conf-restore.hook`. The hook fires after any transaction that touches `pacman.conf` and restores **three** items: CachyOS repo blocks, `Architecture = auto x86_64 x86_64_v3`, and `IgnorePkg` entries (walker, walker-bin, elephant, elephant-files, archlinux-keyring).
+**Mitigation**: This project installs **two** restore hooks that together cover both overwrite paths:
 
-**Manual fix**: If the hook is missing or fails, run:
+1. **Alpm hook** at `/etc/pacman.d/hooks/zz-cachyos-conf-restore.hook` (`Type=Path` on `etc/pacman.conf`). Fires after any *pacman package transaction* that touches `pacman.conf` — covers package upgrades that ship a new `pacman.conf`.
+2. **Omarchy pre-refresh-pacman hook** at `~/.config/omarchy/hooks/pre-refresh-pacman.d/01-cachyos-repos-restore.sh`. Invoked by `omarchy-hook pre-refresh-pacman` *between* the raw `cp` overwrite and `pacman -Syyuu` — covers `omarchy-refresh-pacman`, which the Alpm hook misses because `cp` is not a pacman transaction.
+
+Both hooks restore the same three items: CachyOS repo blocks, `Architecture = auto x86_64 x86_64_v3`, and `IgnorePkg` entries (walker, walker-bin, elephant, elephant-files, archlinux-keyring). The Omarchy hook additionally re-trusts CachyOS signing keys (see R14).
+
+**Manual fix**: If either hook is missing or fails, run:
 ```bash
+# Restore via the Alpm-hook helper (for omarchy-update path):
 sudo bash /usr/local/lib/cachyos-on-omarchy/pacman-hook-restore.sh
+
+# Or run the Omarchy hook directly (for omarchy-refresh-pacman path):
+bash ~/.config/omarchy/hooks/pre-refresh-pacman.d/01-cachyos-repos-restore.sh
 ```
 To manually restore `IgnorePkg`, add the following line under `[options]` in `/etc/pacman.conf`:
 ```
@@ -126,6 +135,21 @@ Then check which packages from the migration list are missing and install them m
 ```bash
 diff /etc/mkinitcpio.conf /etc/mkinitcpio.conf.cachyos-backup
 # Re-apply any lost customizations manually
+```
+
+---
+
+### R14: CachyOS signing keys go untrusted after archlinux-keyring reinstall
+
+**Symptom**: `pacman` errors with "signature from 'CachyOS...' is unknown trust" or "invalid signature" when trying to install or update CachyOS-provided packages. Typically surfaces right after `omarchy-update-keyring` or `omarchy-refresh-pacman` has run.
+
+**Root cause**: `omarchy-update-keyring` runs `sudo pacman -Sy --noconfirm archlinux-keyring`. The post-install script of `archlinux-keyring` runs `pacman-key --populate archlinux`, which can leave CachyOS signing keys in "unknown trust" state in `/etc/pacman.d/gnupg/`. CachyOS packages then fail signature verification on the next `pacman -Syyuu`.
+
+**Mitigation**: The `pre-refresh-pacman.d` hook installed by `migrate.sh` at `~/.config/omarchy/hooks/pre-refresh-pacman.d/01-cachyos-repos-restore.sh` runs `sudo pacman-key --populate cachyos` before `pacman -Syyuu` executes, re-establishing trust for the CachyOS keyring on every `omarchy-refresh-pacman` invocation.
+
+**Manual fix**: If trust drifts outside of an `omarchy-refresh-pacman` run, restore it directly:
+```bash
+sudo pacman-key --populate cachyos
 ```
 
 ---

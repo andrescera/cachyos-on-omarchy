@@ -114,7 +114,9 @@ _should_run_phase() {
 # Install /etc/pacman.d/hooks/zz-cachyos-conf-restore.hook + its helper
 # script under /usr/local/lib/cachyos-on-omarchy/. Metis R6: this is the
 # discoverable mechanism that re-inserts CachyOS repo blocks after
-# omarchy-update overwrites pacman.conf.
+# omarchy-update overwrites pacman.conf. pacman-hook-restore.sh sources
+# const.sh, log.sh, detect-cpu.sh, and pacman-conf-restore.sh from its
+# own directory, so all four dependency files must be installed alongside.
 install_pacman_hook() {
   local hook_dir
   hook_dir="$(dirname "$HOOK_DEST")"
@@ -129,9 +131,32 @@ install_pacman_hook() {
   log_dry "sudo mkdir -p '$helper_dir'"
   log_dry "sudo cp '$MIGRATE_DIR/lib/pacman-hook-restore.sh' '$HOOK_HELPER_DEST'"
   log_dry "sudo chmod 755 '$HOOK_HELPER_DEST'"
+  local dep
+  for dep in const.sh log.sh detect-cpu.sh pacman-conf-restore.sh; do
+    log_dry "sudo cp '$MIGRATE_DIR/lib/$dep' '$helper_dir/$dep'"
+    log_dry "sudo chmod 644 '$helper_dir/$dep'"
+  done
   log_dry "sudo mkdir -p '$hook_dir'"
   log_dry "sudo cp '$MIGRATE_DIR/hooks/zz-cachyos-conf-restore.hook' '$HOOK_DEST'"
   log_ok "Pacman hook installed: $HOOK_DEST"
+}
+
+# install_omarchy_hook
+# Install ~/.config/omarchy/hooks/pre-refresh-pacman.d/01-cachyos-repos-restore.sh.
+# Metis R6/R14: omarchy-refresh-pacman does a raw `cp` of pacman.conf
+# (which the Alpm Type=Path hook does NOT catch) and reinstalls
+# archlinux-keyring (which can leave CachyOS keys untrusted). This hook
+# fires between those steps and the subsequent `pacman -Syyuu`,
+# re-trusting CachyOS keys and re-injecting the repo blocks first.
+install_omarchy_hook() {
+  if [[ -f "$PRE_REFRESH_HOOK_DEST" ]]; then
+    log_ok "Omarchy pre-refresh hook already installed: $PRE_REFRESH_HOOK_DEST"
+    return 0
+  fi
+  log_dry "mkdir -p '$PRE_REFRESH_HOOK_DIR'"
+  log_dry "cp '$MIGRATE_DIR/$PRE_REFRESH_HOOK_SRC' '$PRE_REFRESH_HOOK_DEST'"
+  log_dry "chmod 755 '$PRE_REFRESH_HOOK_DEST'"
+  log_ok "Omarchy pre-refresh hook installed: $PRE_REFRESH_HOOK_DEST"
 }
 
 # ----- Argument parsing -------------------------------------------------
@@ -221,9 +246,10 @@ verify_uki_safety linux-cachyos-bore || {
   exit 1
 }
 
-# ----- Phase 7: Install pacman.conf restore hook -----------------------
-log_step "Phase 7: Installing pacman.conf restore hook"
+# ----- Phase 7: Install pacman.conf restore hooks ----------------------
+log_step "Phase 7: Installing pacman.conf restore hooks"
 install_pacman_hook
+install_omarchy_hook
 
 # ----- Final reboot prompt --------------------------------------------
 log_ok ""

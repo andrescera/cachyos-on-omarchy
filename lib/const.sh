@@ -26,6 +26,11 @@ readonly LIMINE_DEFAULT="/etc/default/limine"
 readonly HOOK_DEST="/etc/pacman.d/hooks/zz-cachyos-conf-restore.hook"
 readonly HOOK_HELPER_DEST="/usr/local/lib/cachyos-on-omarchy/pacman-hook-restore.sh"
 
+# Omarchy hook paths
+readonly PRE_REFRESH_HOOK_DIR="${HOME}/.config/omarchy/hooks/pre-refresh-pacman.d"
+readonly PRE_REFRESH_HOOK_DEST="${HOME}/.config/omarchy/hooks/pre-refresh-pacman.d/01-cachyos-repos-restore.sh"
+readonly PRE_REFRESH_HOOK_SRC="hooks/omarchy/pre-refresh-pacman.d/01-cachyos-repos-restore.sh"
+
 # Package arrays
 readonly CACHYOS_BASE_PKGS=(cachyos-keyring cachyos-mirrorlist cachyos-rate-mirrors)
 readonly CACHYOS_KERNEL_PKGS=(linux-cachyos-bore linux-cachyos-bore-headers)

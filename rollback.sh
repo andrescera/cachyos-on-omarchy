@@ -162,6 +162,8 @@ rollback_scenario_3() {
 
   log_dry "sudo pacman -Rns cachyos-keyring cachyos-mirrorlist cachyos-rate-mirrors 2>/dev/null || true"
   log_dry "sudo pacman -Sy"
+  log_dry "rm -f '$PRE_REFRESH_HOOK_DEST'"
+  log_ok "Omarchy pre-refresh hook removed."
   log_ok "Scenario 3 complete. CachyOS repos removed."
 }
 
