@@ -13,8 +13,11 @@ if [[ -z "${_PACMAN_RESTORE_SOURCED:-}" ]]; then
 
   # Source dependencies
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  # shellcheck source=lib/const.sh
   source "$SCRIPT_DIR/const.sh"
+  # shellcheck source=lib/log.sh
   source "$SCRIPT_DIR/log.sh"
+  # shellcheck source=lib/detect-cpu.sh
   source "$SCRIPT_DIR/detect-cpu.sh"
 
   # Use const.sh value if no override was provided
