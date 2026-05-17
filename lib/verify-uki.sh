@@ -169,13 +169,22 @@ verify_uki_safety() {
     local actual_hash
     actual_hash=$(sha512sum "$full_path" | awk '{print $1}')
     if [[ "$actual_hash" != "${hash_from_conf,,}" ]]; then
-      log_err "Check 3 FAIL: SHA512 hash mismatch for $full_path"
-      log_err "  Expected: $hash_from_conf"
-      log_err "  Actual:   $actual_hash"
-      log_err "Recovery: Regenerate the UKI ('sudo mkinitcpio -p $kernel_name') and re-run limine-update."
-      return 1
+      if grep -q '^hash_mismatch_panic: *no' "$limine_conf_path" 2>/dev/null; then
+        log_warn "Check 3 WARN: SHA512 hash drift for $full_path (hash_mismatch_panic=no, boot unaffected)"
+        log_warn "  Stored:  $hash_from_conf"
+        log_warn "  Actual:  $actual_hash"
+        log_warn "Fix (optional): run 'sudo limine-update' to refresh the stored hash."
+        log_ok "Check 3 PASS (with warning): path resolves, hash outdated but non-panic mode"
+      else
+        log_err "Check 3 FAIL: SHA512 hash mismatch for $full_path"
+        log_err "  Expected: $hash_from_conf"
+        log_err "  Actual:   $actual_hash"
+        log_err "Recovery: Regenerate the UKI ('sudo mkinitcpio -p $kernel_name') and re-run limine-update."
+        return 1
+      fi
+    else
+      log_ok "Check 3 PASS: Path resolves + SHA-512 matches ($full_path)"
     fi
-    log_ok "Check 3 PASS: Path resolves + SHA-512 matches ($full_path)"
   else
     log_warn "Check 3: No hash in limine.conf for this entry — skipping hash verification"
     log_ok "Check 3 PASS: Path resolves to $full_path (no hash to verify)"
