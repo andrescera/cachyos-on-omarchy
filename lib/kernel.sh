@@ -170,13 +170,9 @@ install_cachyos_kernel() {
       log_warn "verify_uki_safety not available (lib/verify-uki.sh missing); skipping Tollgate 2"
     fi
 
-    # When a mkinitcpio.conf backup path is set by the orchestrator, diff
-    # against the post-install version so any user customizations that were
-    # overwritten by the package are surfaced (R13).
-    if [[ -n "${BACKUP_PATH:-}" ]] && declare -f diff_mkinitcpio_after_migration >/dev/null 2>&1; then
-      diff_mkinitcpio_after_migration "$BACKUP_PATH" || true
-    fi
   fi
+  # Metis R13 mkinitcpio.conf diff lives in migrate.sh (orchestrator
+  # concern). Don't duplicate it here.
 
   log_ok "CachyOS kernel phase complete"
   return 0

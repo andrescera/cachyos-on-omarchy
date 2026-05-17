@@ -222,9 +222,10 @@ if _should_run_phase "kernel" "$RESUME_FROM"; then
   install_cachyos_kernel
   # Metis R13: diff mkinitcpio.conf after kernel install so any
   # user customisations the package overwrote are surfaced before reboot.
-  # In DRY_RUN mode the backup tarball was never created on disk, so
-  # this is best-effort (matches kernel.sh's `|| true` pattern).
-  if [[ -n "${BACKUP_PATH:-}" ]]; then
+  # Skipped in DRY_RUN: Phase 2 never wrote the tarball, so the diff
+  # would print a misleading red error against state that was never
+  # supposed to exist.
+  if [[ "$DRY_RUN" != "1" ]] && [[ -n "${BACKUP_PATH:-}" ]]; then
     diff_mkinitcpio_after_migration "$BACKUP_PATH" || true
   fi
 fi
