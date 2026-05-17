@@ -1,0 +1,2 @@
+ENABLE_UKI=no
+TIMEOUT=5

@@ -1,0 +1,3 @@
+ENABLE_UKI=yes
+TIMEOUT=5
+KERNEL_PARAMS="quiet splash"
