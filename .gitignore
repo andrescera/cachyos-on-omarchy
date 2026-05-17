@@ -4,3 +4,4 @@
 evidence/
 .DS_Store
 *.log
+tests/fixtures/boot-efi-linux/*.efi
