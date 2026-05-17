@@ -1,0 +1,10 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = etc/pacman.conf
+
+[Action]
+Description = Restoring CachyOS repo blocks if pacman.conf was overwritten
+When = PostTransaction
+Exec = /usr/local/lib/cachyos-on-omarchy/pacman-hook-restore.sh
