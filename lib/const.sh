@@ -41,3 +41,8 @@ readonly FORBIDDEN_PKGS=(cachyos-fish-config cachyos-zsh-config cachyos-hyprland
 
 # Packages to ignore in pacman.conf (verified from this machine)
 readonly IGNORE_PKGS=(walker walker-bin elephant elephant-files archlinux-keyring)
+
+# Phase 3.5 (upgrade) state files — stored in $BACKUP_PATH so the user
+# can recover/retry after a partial migration or reboot.
+readonly UPGRADE_REMOVED_LIST="removed-for-upgrade.txt"
+readonly UPGRADE_PENDING_LIST="pending-reinstall.txt"

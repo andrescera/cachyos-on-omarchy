@@ -154,6 +154,58 @@ sudo pacman-key --populate cachyos
 
 ---
 
+### R15: lib32 dependency drift between CachyOS and Arch multilib
+
+**Symptom**: `pacman -Syu` (or a fresh `migrate.sh` run) errors with `error: failed to prepare transaction (could not satisfy dependencies)` followed by lines like:
+
+```
+:: installing expat (2.8.1-1.1) breaks dependency 'expat=2.8.0' required by lib32-expat
+```
+
+The package can be any shared library that has a `lib32-*` counterpart in `[multilib]`: `expat`, `glib2`, `glibc`, `openssl`, `icu`, `zlib`, `pcre2`, `sqlite`, `libxml2`, `ffmpeg`, `mesa`, `wayland`, `libdrm`, `vulkan-icd-loader`, `systemd`, etc.
+
+**Root cause**: CachyOS rebuilds and bumps these shared libraries faster than Arch's `[multilib]` repository ships matching `lib32-*` rebuilds. During the "drift window" (6-48h after a CachyOS bump), the strict `expat=X.Y.Z` pin inside `lib32-expat`'s PKGBUILD `depends=()` array points at the **old** Arch version, and `[multilib]` has no newer `lib32-expat` yet. pacman correctly refuses to upgrade `expat` because it would break the declared dep of `lib32-expat`.
+
+This is **not** caused by `migrate.sh` — it's a property of running CachyOS repos alongside Arch's `[multilib]`. The migration script exposes the issue earlier because Phase 3.5 runs a full system upgrade to pull every package to its CachyOS-optimized version.
+
+**Mitigation**: `migrate.sh` Phase 3.5 (`lib/upgrade.sh`) runs a drift-aware system upgrade in four steps:
+
+1. **Detect**: scan every installed `lib32-*` package, parse the strict version pin from its `Depends On` line, compare against the version that the four `cachyos-*` repos offer. Build a `DRIFT_LIB32_PKGS` list.
+2. **Compute cascade**: if drift exists, run `pacman -Rpcs --print-format '%n'` against the drift list to compute the full set of packages that would be removed (lib32-* + reverse deps: typically `steam`, `wine`, `lutris`).
+3. **Consent gate**: split the cascade into repo-installable and AUR-only. If AUR packages are involved, prompt the user explicitly — AUR cannot be auto-reinstalled and will need a manual rebuild after migration.
+4. **Remove → upgrade → reinstall**:
+   - `sudo pacman -Rcns <cascade>` to clear all drift conflicts at once
+   - `sudo pacman -Syu` runs cleanly with no blocking deps
+   - For each removed repo package: `sudo pacman -S --needed <pkg>`. Packages that still fail (multilib has not yet caught up) are recorded as **pending**.
+
+State files written under `$BACKUP_PATH/`:
+- `removed-for-upgrade.txt` — every package removed by the cascade (recovery list)
+- `pending-reinstall.txt` — packages that failed to reinstall (retry list)
+
+**Manual fix** (when Phase 3.5 leaves pending packages, or when drift hits post-migration during a normal `omarchy-update`):
+
+Wait 24-48h for `[multilib]` to ship matching `lib32-*` rebuilds, then:
+
+```bash
+# Retry pending pacman -S list (replace with your actual backup path):
+sudo pacman -S $(cat /var/backups/cachyos-on-omarchy/migration-<timestamp>/pending-reinstall.txt)
+
+# Or for a one-off drift error during omarchy-update:
+sudo pacman -Syu --ignore <conflicting-pkg>      # skip just that pkg
+# or
+sudo pacman -Syu --assume-installed '<pkg>=<old-version>'   # bypass the strict pin
+```
+
+**AUR cascade recovery**: if Phase 3.5 removed AUR packages (e.g. `wine-staging-git`), they are listed in `removed-for-upgrade.txt` but NOT in `pending-reinstall.txt`. Rebuild them after migration with your preferred AUR helper:
+
+```bash
+# Identify removed AUR packages:
+comm -23 <(sort $BACKUP_PATH/removed-for-upgrade.txt) <(pacman -Slq | sort)
+# Rebuild each via the appropriate AUR helper.
+```
+
+---
+
 ## Additional Gotchas
 
 ### DKMS depmod timing

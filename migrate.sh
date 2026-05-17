@@ -42,6 +42,8 @@ source "$MIGRATE_DIR/lib/preflight.sh"
 source "$MIGRATE_DIR/lib/backup.sh"
 # shellcheck source=lib/repos.sh
 source "$MIGRATE_DIR/lib/repos.sh"
+# shellcheck source=lib/upgrade.sh
+source "$MIGRATE_DIR/lib/upgrade.sh"
 # shellcheck source=lib/kernel.sh
 source "$MIGRATE_DIR/lib/kernel.sh"
 # shellcheck source=lib/settings.sh
@@ -50,6 +52,8 @@ source "$MIGRATE_DIR/lib/settings.sh"
 source "$MIGRATE_DIR/lib/verify-uki.sh"
 # shellcheck source=lib/post-reboot-verify.sh
 source "$MIGRATE_DIR/lib/post-reboot-verify.sh"
+# shellcheck source=lib/cleanup.sh
+source "$MIGRATE_DIR/lib/cleanup.sh"
 
 # _sigint_handler
 # Trap target for SIGINT. Prints a recovery hint pointing the operator at
@@ -216,6 +220,15 @@ if _should_run_phase "repos" "$RESUME_FROM"; then
   install_cachyos_repos
 fi
 
+# ----- Phase 3.5: Drift-aware system upgrade ---------------------------
+# After repos are added, upgrade every Arch-supplied package to its
+# CachyOS-optimized counterpart. Detects lib32 strict-pin drift and
+# resolves via cascade remove → pacman -Syu → reinstall. See lib/upgrade.sh
+# and docs/gotchas.md R15 for the full algorithm.
+if _should_run_phase "repos" "$RESUME_FROM"; then
+  run_system_upgrade "${BACKUP_PATH:-}"
+fi
+
 # ----- Phase 4: Kernel -------------------------------------------------
 if _should_run_phase "kernel" "$RESUME_FROM"; then
   log_step "Phase 4: Installing CachyOS kernel (linux-cachyos-bore)"
@@ -252,12 +265,13 @@ log_step "Phase 7: Installing pacman.conf restore hooks"
 install_pacman_hook
 install_omarchy_hook
 
-# ----- Final reboot prompt --------------------------------------------
-log_ok ""
-log_ok "=========================================="
-log_ok "Migration complete. Reboot to load the new kernel."
+# ----- Phase 8: Final summary + optional cleanup ----------------------
+print_migration_complete_banner
+offer_default_kernel_removal
 log_ok "After reboot, run: ./migrate.sh --verify"
-log_ok "=========================================="
+printf "\n"
+
+# ----- Final reboot prompt --------------------------------------------
 confirm "Reboot now into linux-cachyos-bore?" && {
   log_step "Rebooting..."
   if command -v omarchy-system-reboot >/dev/null 2>&1; then
