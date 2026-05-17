@@ -12,6 +12,8 @@ set -euo pipefail
 # otherwise runs `findmnt -n -o FSTYPE /`.
 # Only btrfs and ext4 are "supported" by this script; xfs and unknown are
 # valid outputs but the caller must abort on them.
+# Metis R12: targets '/' exclusively; multi-disk or sub-volume layouts are handled
+# by the caller — this function never inspects secondary mounts.
 detect_root_fs() {
   local fs=""
 

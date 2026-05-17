@@ -81,6 +81,7 @@ run_preflight() {
   log_ok "OK: Omarchy version $omarchy_ver"
 
   # ----- Check 6: required commands present -----
+  # Metis R8: Pre-flight verifies every Omarchy helper exists before use to detect renames/removals
   log_step "Check 6: Required commands available"
   for cmd in gum yay limine mkinitcpio; do
     if ! require_cmd "$cmd"; then

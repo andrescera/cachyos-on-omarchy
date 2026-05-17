@@ -7,9 +7,9 @@ set -euo pipefail
 # zram-generator, sysctl tweaks, and IO scheduler udev rules) and verifies
 # that the resulting system state matches CachyOS defaults.
 #
-# Strictly excludes the Hyprland, fish, and zsh config sub-packages
-# (see FORBIDDEN_PKGS in lib/const.sh) - they conflict with the Omarchy
-# shell/desktop layer.
+# Metis R9: Only cachyos-settings is installed; cachyos-hyprland-settings,
+# cachyos-fish-config, and cachyos-zsh-config are explicitly excluded because
+# they conflict with the Omarchy desktop layer (see FORBIDDEN_PKGS in const.sh).
 #
 # Verification is advisory: each failed check emits a log_warn (not log_err)
 # and verify_settings returns the warning count. A non-zero return is a
