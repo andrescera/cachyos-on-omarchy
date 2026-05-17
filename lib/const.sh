@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034  # Constants are sourced by other scripts; unused-in-isolation is expected
 set -euo pipefail
 
 # CachyOS on Omarchy - Constants
