@@ -1,0 +1,6 @@
+.sisyphus/
+*.swp
+*.bak
+evidence/
+.DS_Store
+*.log
