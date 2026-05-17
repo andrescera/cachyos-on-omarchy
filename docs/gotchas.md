@@ -12,11 +12,15 @@ This document covers known edge cases, failure modes, and their mitigations. Eac
 
 **Root cause**: `omarchy-update` regenerates `pacman.conf` from a template, removing any custom repo blocks that were appended after the initial Omarchy install.
 
-**Mitigation**: This project installs a pacman hook at `/etc/pacman.d/hooks/zz-cachyos-conf-restore.hook`. The hook fires after any transaction that touches `pacman.conf` and re-inserts the CachyOS repo blocks automatically.
+**Mitigation**: This project installs a pacman hook at `/etc/pacman.d/hooks/zz-cachyos-conf-restore.hook`. The hook fires after any transaction that touches `pacman.conf` and restores **three** items: CachyOS repo blocks, `Architecture = auto x86_64 x86_64_v3`, and `IgnorePkg` entries (walker, walker-bin, elephant, elephant-files, archlinux-keyring).
 
 **Manual fix**: If the hook is missing or fails, run:
 ```bash
 sudo bash /usr/local/lib/cachyos-on-omarchy/pacman-hook-restore.sh
+```
+To manually restore `IgnorePkg`, add the following line under `[options]` in `/etc/pacman.conf`:
+```
+IgnorePkg = walker walker-bin elephant elephant-files archlinux-keyring
 ```
 
 ---
