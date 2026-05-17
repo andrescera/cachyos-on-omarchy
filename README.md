@@ -73,6 +73,10 @@ If something goes wrong, use the rollback script:
 
 See [docs/rollback.md](docs/rollback.md) for full scenario documentation.
 
+## Post-migration tuning (optional)
+
+After a successful migration and reboot, see [docs/recommendations.md](docs/recommendations.md) for optional CachyOS-recommended tweaks (e.g. disabling kernel `zswap` when `zram` is active) that the script intentionally does not apply automatically.
+
 ## All flags
 
 ### migrate.sh

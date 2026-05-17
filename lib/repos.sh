@@ -59,15 +59,18 @@ install_cachyos_repos() {
   log_dry "cd '${extract_dir}' && sudo ./cachyos-repo.sh"
 
   # Step 4: Post-install verify (defensive — upstream script could fail silently)
-  log_step "Verifying cachyos-keyring + cachyos-mirrorlist installed"
+  # cachyos-v3-mirrorlist is required for the three [cachyos-*-v3] repo blocks to
+  # resolve mirror URLs. Upstream installer ships it but pactree shows nothing
+  # hard-depends on it, so we verify explicitly.
+  log_step "Verifying cachyos-keyring + cachyos-mirrorlist + cachyos-v3-mirrorlist installed"
   if [[ "$DRY_RUN" == "1" ]]; then
-    printf "DRY-RUN: pacman -Q cachyos-keyring cachyos-mirrorlist\n"
+    printf "DRY-RUN: pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist\n"
   else
-    if ! pacman -Q cachyos-keyring cachyos-mirrorlist >/dev/null 2>&1; then
-      log_err "cachyos-keyring or cachyos-mirrorlist not installed after upstream script"
+    if ! pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist >/dev/null 2>&1; then
+      log_err "cachyos-keyring, cachyos-mirrorlist, or cachyos-v3-mirrorlist not installed after upstream script"
       return 1
     fi
-    log_ok "cachyos-keyring and cachyos-mirrorlist verified installed"
+    log_ok "cachyos-keyring, cachyos-mirrorlist, and cachyos-v3-mirrorlist verified installed"
   fi
 
   # Step 5: Find anchor (Metis R10: search MULTIPLE anchors, fail loudly)

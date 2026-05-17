@@ -32,7 +32,7 @@ readonly PRE_REFRESH_HOOK_DEST="${HOME}/.config/omarchy/hooks/pre-refresh-pacman
 readonly PRE_REFRESH_HOOK_SRC="hooks/omarchy/pre-refresh-pacman.d/01-cachyos-repos-restore.sh"
 
 # Package arrays
-readonly CACHYOS_BASE_PKGS=(cachyos-keyring cachyos-mirrorlist cachyos-rate-mirrors)
+readonly CACHYOS_BASE_PKGS=(cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist cachyos-rate-mirrors)
 readonly CACHYOS_KERNEL_PKGS=(linux-cachyos-bore linux-cachyos-bore-headers)
 readonly CACHYOS_SETTINGS_PKGS=(cachyos-settings)
 

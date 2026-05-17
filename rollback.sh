@@ -160,7 +160,7 @@ rollback_scenario_3() {
 
   restore_backup_pacman_conf "$latest_backup"
 
-  log_dry "sudo pacman -Rns cachyos-keyring cachyos-mirrorlist cachyos-rate-mirrors 2>/dev/null || true"
+  log_dry "sudo pacman -Rns cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist cachyos-rate-mirrors 2>/dev/null || true"
   log_dry "sudo pacman -Sy"
   log_dry "rm -f '$PRE_REFRESH_HOOK_DEST'"
   log_ok "Omarchy pre-refresh hook removed."
